@@ -38,7 +38,7 @@ nohup npm start &
 pm2 start server.js
 ```
 
-Access at `http://localhost:3000`
+Access at `http://localhost:3847`
 
 ## Configuration
 
@@ -47,4 +47,4 @@ Access at `http://localhost:3000`
 | `PTV_USER_ID` | Your PTV API user ID |
 | `PTV_API_KEY` | Your PTV API key |
 | `STOP_ID` | PTV stop ID to monitor |
-| `PORT` | Server port (default: 3000) |
+| `PORT` | Server port (default: 3847) |
