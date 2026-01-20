@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bus Arrivals</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .stop-id {
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 20px;
+    }
+
+    .arrivals {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .arrival {
+      background: #16213e;
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .route-info {
+      min-width: 100px;
+    }
+
+    .route {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #4cc9f0;
+    }
+
+    .destination {
+      font-size: 0.85rem;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .time-info {
+      text-align: right;
+    }
+
+    .arrival-time {
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .minutes {
+      font-size: 0.9rem;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .delay {
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    .delay.late {
+      color: #ff6b6b;
+    }
+
+    .delay.early {
+      color: #4ecdc4;
+    }
+
+    .delay.on-time {
+      color: #51cf66;
+    }
+
+    .footer {
+      margin-top: 24px;
+      font-size: 0.8rem;
+      color: #666;
+      text-align: center;
+    }
+
+    .error {
+      background: #4a1a1a;
+      border: 1px solid #ff6b6b;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      color: #ff6b6b;
+    }
+
+    .no-arrivals {
+      background: #16213e;
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      color: #888;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Next Buses</h1>
+    <div class="stop-id" id="stopId">Loading...</div>
+    <div class="arrivals" id="arrivals">
+      <div class="loading">Loading arrivals...</div>
+    </div>
+    <div class="footer">
+      Last updated: <span id="lastUpdated">-</span>
+    </div>
+  </div>
+
+  <script>
+    const REFRESH_INTERVAL = 30000; // 30 seconds
+    const IDLE_REFRESH_INTERVAL = 300000; // 5 minutes when no buses
+
+    let refreshTimer = null;
+
+    function scheduleRefresh(hasArrivals) {
+      if (refreshTimer) clearInterval(refreshTimer);
+      const interval = hasArrivals ? REFRESH_INTERVAL : IDLE_REFRESH_INTERVAL;
+      refreshTimer = setInterval(fetchArrivals, interval);
+    }
+
+    function formatMinutes(minutes) {
+      if (minutes <= 0) return 'Due now';
+      if (minutes === 1) return '1 min';
+      return `${minutes} mins`;
+    }
+
+    function formatDelay(delayMinutes) {
+      if (delayMinutes === 0) return { text: 'On time', class: 'on-time' };
+      if (delayMinutes > 0) return { text: `${delayMinutes} min late`, class: 'late' };
+      return { text: `${Math.abs(delayMinutes)} min early`, class: 'early' };
+    }
+
+    function renderArrivals(data) {
+      const container = document.getElementById('arrivals');
+      const stopIdEl = document.getElementById('stopId');
+      const lastUpdatedEl = document.getElementById('lastUpdated');
+
+      stopIdEl.textContent = `Stop ${data.stopId}`;
+      lastUpdatedEl.textContent = new Date(data.lastUpdated).toLocaleTimeString();
+
+      if (data.arrivals.length === 0) {
+        container.innerHTML = '<div class="no-arrivals">No upcoming arrivals</div>';
+        scheduleRefresh(false);
+        return;
+      }
+
+      scheduleRefresh(true);
+
+      container.innerHTML = data.arrivals.map(arrival => {
+        const delay = formatDelay(arrival.delayMinutes);
+        return `
+          <div class="arrival">
+            <div class="route-info">
+              <div class="route">${arrival.routeId}</div>
+              <div class="destination">${arrival.destination}</div>
+            </div>
+            <div class="time-info">
+              <div class="arrival-time">${arrival.arrivalTimeFormatted}</div>
+              <div class="minutes">${formatMinutes(arrival.minutesUntil)}</div>
+              <div class="delay ${delay.class}">${delay.text}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderError(message) {
+      const container = document.getElementById('arrivals');
+      container.innerHTML = `<div class="error">${message}</div>`;
+      scheduleRefresh(false);
+    }
+
+    async function fetchArrivals() {
+      try {
+        const response = await fetch('/api/arrivals');
+        const data = await response.json();
+
+        if (!response.ok) {
+          renderError(data.error || 'Failed to fetch arrivals');
+          return;
+        }
+
+        renderArrivals(data);
+      } catch (error) {
+        renderError('Connection error. Retrying...');
+      }
+    }
+
+    // Initial fetch (scheduleRefresh will be called based on results)
+    fetchArrivals();
+  </script>
+</body>
+</html>
