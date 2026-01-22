@@ -39,7 +39,7 @@ function buildSignedUrl(requestPath) {
 function formatArrivalTime(isoString) {
   const date = new Date(isoString);
   return date.toLocaleTimeString('en-AU', {
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
     hour12: true
   });

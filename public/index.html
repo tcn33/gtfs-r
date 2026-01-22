@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#ff8200">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <title>Bus Arrivals</title>
   <style>
     * {
@@ -58,7 +63,7 @@
     .route {
       font-size: 1.8rem;
       font-weight: 700;
-      color: #4cc9f0;
+      color: #ff8200;
     }
 
     .destination {
@@ -157,7 +162,7 @@
     function formatMinutes(minutes) {
       if (minutes <= 0) return 'Due now';
       if (minutes === 1) return '1 min';
-      return `${minutes} mins`;
+      return `${minutes} min`;
     }
 
     function formatDelay(delayMinutes) {
@@ -171,7 +176,7 @@
       const stopIdEl = document.getElementById('stopId');
       const lastUpdatedEl = document.getElementById('lastUpdated');
 
-      stopIdEl.textContent = `Stop ${data.stopId}`;
+      stopIdEl.textContent = 'Terrara Rd & Canterbury Rd';
       lastUpdatedEl.textContent = new Date(data.lastUpdated).toLocaleTimeString();
 
       if (data.arrivals.length === 0) {
